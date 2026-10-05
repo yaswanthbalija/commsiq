@@ -41,11 +41,14 @@ export function AutoReveal({ children, className, selector = DEFAULT_SELECTOR }:
 
     const ctx = gsap.context(() => {
       gsap.set(targets, { opacity: 0, y: 36 });
-      ScrollTrigger.batch(targets, {
-        start: "top 92%",
-        once: true,
-        onEnter: (batch) =>
-          gsap.to(batch, { opacity: 1, y: 0, duration: 0.8, stagger: 0.07, ease: "power3.out", overwrite: true }),
+      const hidden = { opacity: 0, y: 36 };
+      const show = (batch: Element[]) =>
+        gsap.to(batch, { opacity: 1, y: 0, duration: 0.7, stagger: 0.06, ease: "power3.out", overwrite: true });
+      ScrollTrigger.batch(targets, { start: "top 92%", onEnter: show, onEnterBack: show });
+      // Reset only once an item is fully off-screen so it replays without visible flicker.
+      targets.forEach((item) => {
+        ScrollTrigger.create({ trigger: item, start: "top bottom", onLeaveBack: () => gsap.set(item, hidden) });
+        ScrollTrigger.create({ trigger: item, start: "bottom top", onLeave: () => gsap.set(item, hidden) });
       });
     }, root);
     return () => ctx.revert();

@@ -10,6 +10,8 @@ import { useDemoModal } from "@/components/layout/DemoModal";
 import { RollText } from "@/components/motion/RollText";
 import { cn } from "@/lib/utils";
 
+const HIDE_THRESHOLD = 12;
+
 /** Hide the bar while scrolling down, bring it back on the first upward scroll. */
 function useHideOnScroll(locked: boolean) {
   const [hidden, setHidden] = useState(false);
@@ -22,6 +24,8 @@ function useHideOnScroll(locked: boolean) {
       raf = 0;
       const y = window.scrollY;
       setScrolled(y > 24);
+      // Ignore sub-threshold jitter so a slow scroll does not toggle the bar.
+      if (Math.abs(y - last) < HIDE_THRESHOLD) return;
       if (!locked) setHidden(y > last && y > 160);
       last = y;
     };
@@ -47,11 +51,12 @@ export function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 border-b border-white/10 backdrop-blur-xl transition-[transform,background-color,box-shadow] duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
+        "sticky top-0 z-50 overflow-visible border-b border-white/10 backdrop-blur-xl transition-[transform,background-color,box-shadow] duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
         scrolled ? "bg-[var(--ciq-black)]/85 shadow-[0_10px_40px_rgba(5,5,8,0.35)]" : "bg-[var(--ciq-black)]/90",
         hidden ? "-translate-y-full" : "translate-y-0",
       )}
     >
+      <span className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-[linear-gradient(90deg,var(--ciq-pink),var(--ciq-purple),var(--ciq-blue))]" aria-hidden />
       <div className="kx-container flex h-[78px] items-center justify-between gap-3">
         <Link href="/" className="shrink-0" onClick={() => setOpenMenu(null)}>
           <Image

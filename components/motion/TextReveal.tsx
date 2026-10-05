@@ -2,27 +2,27 @@
 
 import { useEffect, useMemo, useRef, type ElementType, type Ref } from "react";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useSplash } from "@/components/layout/SiteShell";
+import { bindReveal } from "@/components/motion/bindReveal";
 import { cn } from "@/lib/utils";
 
-gsap.registerPlugin(ScrollTrigger);
+/** Word mask with room for descenders (g, y, p) and ascenders; negative margins keep line-height unchanged. */
+const MASK = "-mb-[0.24em] -mt-[0.1em] inline-block overflow-hidden pb-[0.24em] pt-[0.1em] align-bottom";
 
 type Props = {
   text: string;
   as?: ElementType;
   className?: string;
-  /** "scroll" reveals when the element enters the viewport; "splash" reveals right after the intro. */
   trigger?: "scroll" | "splash";
   delay?: number;
   stagger?: number;
-  /** Words to paint with the brand gradient. */
   accent?: readonly string[];
 };
 
 /**
- * Word-by-word masked reveal (each word slides up from a clipped line).
- * Same effect as SplitType + GSAP on mediakart.org, without the extra dependency.
+ * Word-by-word masked reveal.
+ * Scroll: plays when the heading enters, stays readable, replays after it
+ * has fully left the viewport in either direction.
  */
 export function TextReveal({
   text,
@@ -43,27 +43,18 @@ export function TextReveal({
     if (trigger === "splash" && !splashDone) return;
 
     const inner = el.querySelectorAll<HTMLElement>("[data-word]");
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const ctx = gsap.context(() => {
-      // fromTo locks the start values at creation so a later cache re-parse
-      // cannot turn the percent offset into a stray pixel translate.
-      gsap.fromTo(
+      if (reduce) {
+        gsap.set(inner, { yPercent: 0, opacity: 1 });
+        return;
+      }
+      const tween = gsap.fromTo(
         inner,
-        { yPercent: 110, y: 0, rotate: 3, opacity: 0 },
-        {
-          yPercent: 0,
-          y: 0,
-          rotate: 0,
-          opacity: 1,
-          duration: 0.9,
-          stagger,
-          delay,
-          ease: "power4.out",
-          immediateRender: true,
-          ...(trigger === "scroll"
-            ? { scrollTrigger: { trigger: el, start: "top 92%", once: true } }
-            : {}),
-        },
+        { yPercent: 110, opacity: 0 },
+        { yPercent: 0, opacity: 1, duration: 0.7, stagger, delay, ease: "power4.out", paused: trigger === "scroll" },
       );
+      if (trigger === "scroll") bindReveal(tween, el, "top 88%");
     }, el);
     return () => ctx.revert();
   }, [trigger, splashDone, delay, stagger, words.length]);
@@ -75,15 +66,11 @@ export function TextReveal({
   return (
     <Tag ref={ref} className={cn("ciq-split", className)} aria-label={text}>
       {words.map((word, i) => (
-        <span key={`${word}-${i}`} className="inline-block overflow-hidden pb-[0.08em] align-bottom" aria-hidden>
-          <span
-            data-word
-            className={cn("inline-block will-change-transform", isAccent(word) && "ciq-gradient-text")}
-            style={{ opacity: 0 }}
-          >
+        <span key={`${word}-${i}`} className={MASK} aria-hidden>
+          <span data-word className={cn("inline-block", isAccent(word) && "ciq-gradient-text")}>
             {word}
+            {i < words.length - 1 ? "\u00a0" : null}
           </span>
-          {i < words.length - 1 ? "\u00a0" : null}
         </span>
       ))}
     </Tag>

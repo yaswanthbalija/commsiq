@@ -193,7 +193,7 @@ export function RcsScreen() {
       </div>
       <div className="flex-1 space-y-2 px-3 pt-2 text-[12px] leading-[1.35]">
         <div className="live-msg max-w-[92%] overflow-hidden rounded-2xl rounded-tl-md bg-[#f1f3f4]" style={step(0)}>
-          <div className="h-[88px] bg-[linear-gradient(120deg,#2da8ff,#9b4dff)]" />
+          <div className="h-[88px] bg-[linear-gradient(120deg,#1a73e8,#174ea6)]" />
           <div className="px-3 py-2 text-[#202124]">
             <p className="font-semibold">Nova EV · Book a test drive</p>
             <p className="mt-0.5 text-[11px] text-[#5f6368]">480 km range · Fast charge · From ₹14.9L</p>

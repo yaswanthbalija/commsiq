@@ -6,18 +6,18 @@ import { cn } from "@/lib/utils";
 export type Motif = "sms" | "whatsapp" | "rcs" | "voice";
 
 const COLORS: Record<Motif, [string, string]> = {
-  sms: ["#2da8ff", "#9b4dff"],
+  sms: ["#ff2d8b", "#9b4dff"],
   whatsapp: ["#25d366", "#2da8ff"],
-  rcs: ["#9b4dff", "#ff2d8b"],
-  voice: ["#ff2d8b", "#9b4dff"],
+  rcs: ["#2da8ff", "#9b4dff"],
+  voice: ["#9b4dff", "#ff2d8b"],
 };
 
 /**
  * Generative motion per channel, drawn on canvas:
  *  sms       – throughput lanes: packets racing along parallel lines
  *  whatsapp  – conversation ripples: rounded ripples expanding from two points
- *  rcs       – rich-card lattice: rounded tiles breathing and re-colouring
- *  voice     – radial waveform: bars around a circle following a signal
+ *  rcs       – rich-card lattice in Google Messages blue
+ *  voice     – two endpoints with a travelling talk path and a linear waveform
  */
 export function ChannelMotif({ kind, className }: { kind: Motif; className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -35,7 +35,7 @@ export function ChannelMotif({ kind, className }: { kind: Motif; className?: str
 
     const layout = () => {
       const r = canvas.getBoundingClientRect();
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const dpr = Math.min(1.25, window.devicePixelRatio || 1);
       w = r.width;
       h = r.height;
       canvas.width = w * dpr;
@@ -116,15 +116,16 @@ export function ChannelMotif({ kind, className }: { kind: Motif; className?: str
           const y = gap + cy * (th + gap) + (1 - pulse) * 4;
           const wdt = tw - (1 - pulse) * 8;
           const hgt = th - (1 - pulse) * 8;
-          ctx.fillStyle = pulse > 0.72 ? grad : "rgba(255,255,255,0.06)";
-          ctx.strokeStyle = "rgba(255,255,255,0.12)";
+          // Outline-only tiles; a single lit tile at a time so the field never washes the copy.
+          ctx.fillStyle = pulse > 0.86 ? grad : "rgba(255,255,255,0.015)";
+          ctx.strokeStyle = "rgba(255,255,255,0.09)";
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.roundRect(x, y, wdt, hgt, 14);
           ctx.fill();
           ctx.stroke();
           // media bar + text lines inside the tile
-          ctx.fillStyle = pulse > 0.72 ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.14)";
+          ctx.fillStyle = pulse > 0.86 ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.05)";
           ctx.beginPath();
           ctx.roundRect(x + 12, y + 12, wdt - 24, hgt * 0.42, 8);
           ctx.fill();
@@ -132,36 +133,44 @@ export function ChannelMotif({ kind, className }: { kind: Motif; className?: str
           ctx.fillRect(x + 12, y + hgt * 0.42 + 36, (wdt - 24) * 0.45, 4);
         });
       } else {
-        const cx = w / 2;
-        const cy = h / 2;
-        const base = Math.min(w, h) * 0.22;
-        const bars = 96;
-        for (let i = 0; i < bars; i++) {
-          const a = (i / bars) * Math.PI * 2;
-          const sig = Math.abs(Math.sin(a * 5 + t * 2.4) * 0.5 + Math.sin(a * 13 - t * 3.1) * 0.3 + Math.sin(t * 6 + i) * 0.2);
-          const len = 10 + sig * base * 0.9;
-          const x1 = cx + Math.cos(a) * base;
-          const y1 = cy + Math.sin(a) * base;
-          const x2 = cx + Math.cos(a) * (base + len);
-          const y2 = cy + Math.sin(a) * (base + len);
-          ctx.strokeStyle = grad;
-          ctx.lineWidth = 3;
-          ctx.lineCap = "round";
+        // Voice: caller ↔ agent talk path + linear audio meter (not a sunburst)
+        const y = h * 0.42;
+        const left = w * 0.16;
+        const right = w * 0.84;
+        ctx.strokeStyle = "rgba(255,255,255,0.14)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 8]);
+        ctx.beginPath();
+        ctx.moveTo(left, y);
+        ctx.lineTo(right, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        const u = (t * 0.22) % 1;
+        const px = left + (right - left) * u;
+        ctx.fillStyle = c1;
+        ctx.beginPath();
+        ctx.arc(px, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        [left, right].forEach((x, i) => {
+          ctx.fillStyle = i === 0 ? c2 : c1;
           ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
+          ctx.arc(x, y, 8, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        const bars = 42;
+        const midY = h * 0.72;
+        const gap = w / (bars + 2);
+        for (let i = 0; i < bars; i++) {
+          const sig = Math.abs(Math.sin(t * 4.2 + i * 0.45) * 0.55 + Math.sin(t * 2.1 + i * 0.18) * 0.45);
+          const bh = 8 + sig * 46;
+          ctx.fillStyle = grad;
+          ctx.globalAlpha = 0.45 + sig * 0.55;
+          ctx.fillRect(gap * (i + 1), midY - bh, Math.max(2, gap * 0.45), bh);
         }
-        ctx.strokeStyle = "rgba(255,255,255,0.25)";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(cx, cy, base - 8, 0, Math.PI * 2);
-        ctx.stroke();
-        const ring = (t * 0.6) % 1;
-        ctx.strokeStyle = `rgba(255,255,255,${(1 - ring) * 0.5})`;
-        ctx.beginPath();
-        ctx.arc(cx, cy, base * 0.5 + ring * base * 0.5, 0, Math.PI * 2);
-        ctx.stroke();
+        ctx.globalAlpha = 1;
       }
     };
 

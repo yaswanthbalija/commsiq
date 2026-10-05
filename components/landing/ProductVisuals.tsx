@@ -1,4 +1,6 @@
-import type { CSSProperties, ReactNode } from "react";
+"use client";
+
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { IconChecks, IconHeadset, IconPhoneIncoming, IconRosetteDiscountCheck, IconUsers } from "@tabler/icons-react";
 import { ChannelLogo } from "@/components/ui/ChannelLogo";
 import { cn } from "@/lib/utils";
@@ -12,7 +14,7 @@ const step = (i: number, cycle = 7): CSSProperties => ({ "--d": `${i * 0.9}s`, "
 
 function Window({ title, channel, children, className }: { title: string; channel: Parameters<typeof ChannelLogo>[0]["channel"]; children: ReactNode; className?: string }) {
   return (
-    <div className={cn("ciq-window relative w-full overflow-hidden rounded-[22px] border border-white/12 bg-[#0b0b14]/85 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] backdrop-blur-xl", className)}>
+    <div className={cn("ciq-window relative w-full overflow-hidden rounded-[22px] border border-white/12 bg-[#0b0b14]/95 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)]", className)}>
       <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
         <span className="flex gap-1.5" aria-hidden>
           <i className="h-2.5 w-2.5 rounded-full bg-white/15" />
@@ -56,7 +58,7 @@ export function VisualSms() {
       <ul className="mt-3 space-y-2">
         {SMS_ROWS.map((r, i) => (
           <li key={r.to} className="ciq-loop flex items-start gap-3 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5" style={step(i)}>
-            <span className="mt-0.5 rounded-md bg-[#2da8ff]/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[#2da8ff]">{r.type}</span>
+            <span className="mt-0.5 rounded-md bg-[#ff2d8b]/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[#ff7ab8]">{r.type}</span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[12px] text-white/90">{r.body}</p>
               <p className="mt-0.5 font-mono text-[10px] text-white/40">{r.to}</p>
@@ -114,40 +116,150 @@ export function VisualWhatsapp() {
 }
 
 /* ------------------------------------------------------------------ RCS */
+type RcsLine =
+  | { kind: "card"; title: string; body: string; actions: string[] }
+  | { kind: "in"; text: string }
+  | { kind: "out"; text: string }
+  | { kind: "chips"; items: string[] };
+
+const RCS_THREAD: RcsLine[] = [
+  {
+    kind: "card",
+    title: "6E 214 · DEL → BLR",
+    body: "Boarding 07:40 · Gate 14 · Seat 12A · Terminal 1",
+    actions: ["Boarding pass", "Change seat"],
+  },
+  { kind: "chips", items: ["On my way", "Need assistance"] },
+  { kind: "out", text: "On my way" },
+  { kind: "in", text: "We will ping you when boarding starts. Show the QR at Gate 14." },
+  { kind: "in", text: "Need a cab after landing? Tap below to book." },
+  { kind: "chips", items: ["Book cab", "Not now"] },
+];
+
+const RCS_TYPING_MS = 900;
+const RCS_READ_MS = 2000;
+const RCS_HOLD_MS = 2600;
+const RCS_FADE_MS = 500;
+
+/**
+ * Paces the thread like a real chat: a typing indicator before each business
+ * message, a read pause after each, then the whole thread fades out and starts
+ * over instead of snapping back to the first line.
+ */
+function useRcsThread(total: number) {
+  const [shown, setShown] = useState(1);
+  const [typing, setTyping] = useState(false);
+  const [fading, setFading] = useState(false);
+
+  useEffect(() => {
+    let timer = 0;
+    const schedule = (fn: () => void, ms: number) => {
+      timer = window.setTimeout(fn, ms);
+    };
+    const next = (n: number) => {
+      if (n >= total) {
+        schedule(() => {
+          setFading(true);
+          schedule(() => {
+            setShown(1);
+            setFading(false);
+            schedule(() => next(1), RCS_READ_MS);
+          }, RCS_FADE_MS);
+        }, RCS_HOLD_MS);
+        return;
+      }
+      const incoming = RCS_THREAD[n].kind !== "out";
+      if (incoming) {
+        setTyping(true);
+        schedule(() => {
+          setTyping(false);
+          setShown(n + 1);
+          schedule(() => next(n + 1), RCS_READ_MS);
+        }, RCS_TYPING_MS);
+      } else {
+        schedule(() => {
+          setShown(n + 1);
+          schedule(() => next(n + 1), RCS_READ_MS * 0.6);
+        }, RCS_READ_MS * 0.5);
+      }
+    };
+    schedule(() => next(1), RCS_READ_MS);
+    return () => window.clearTimeout(timer);
+  }, [total]);
+
+  return { shown, typing, fading };
+}
+
 export function VisualRcs() {
-  const cards = [
-    { t: "Goa · 3N/4D", p: "₹18,499", g: "linear-gradient(135deg,#2da8ff,#1a2a6e)" },
-    { t: "Kerala · 4N/5D", p: "₹22,900", g: "linear-gradient(135deg,#9b4dff,#2a1560)" },
-    { t: "Ladakh · 6N/7D", p: "₹34,750", g: "linear-gradient(135deg,#ff2d8b,#5a0f3a)" },
-  ];
+  const { shown, typing, fading } = useRcsThread(RCS_THREAD.length);
+
   return (
-    <Window title="TripNest Holidays" channel="rcs">
+    <Window title="Google Messages · RCS" channel="rcs">
       <div className="mb-3 flex items-center gap-2 text-[12px]">
-        <span className="font-semibold text-white">TripNest Holidays</span>
-        <IconRosetteDiscountCheck size={16} className="text-[#1a73e8]" />
-        <span className="text-white/45">Verified sender</span>
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1a73e8] text-[11px] font-bold text-white">6E</span>
+        <div className="min-w-0">
+          <p className="flex items-center gap-1 font-semibold text-white">
+            IndiGo
+            <IconRosetteDiscountCheck size={14} className="text-[#1a73e8]" />
+          </p>
+          <p className="text-[11px] text-white/45">Verified business · RCS chat</p>
+        </div>
       </div>
-      <div className="ciq-rcs-track flex gap-3">
-        {cards.map((c) => (
-          <div key={c.t} className="w-[62%] shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[#0f0f1a]">
-            <div className="h-24" style={{ background: c.g }} />
-            <div className="px-3 py-2.5">
-              <p className="text-[13px] font-semibold text-white">{c.t}</p>
-              <p className="text-[12px] text-white/60">from {c.p} · flights incl.</p>
-              <div className="mt-2 flex gap-1.5">
-                <span className="rounded-full border border-[#1a73e8]/60 px-2.5 py-1 text-[11px] font-semibold text-[#8ab4f8]">Book</span>
-                <span className="rounded-full border border-white/15 px-2.5 py-1 text-[11px] font-semibold text-white/80">Itinerary</span>
+
+      <div
+        className="flex h-[300px] flex-col justify-end gap-2 overflow-hidden transition-opacity ease-out"
+        style={{ opacity: fading ? 0 : 1, transitionDuration: `${RCS_FADE_MS}ms` }}
+      >
+        {RCS_THREAD.slice(0, shown).map((line, i) => {
+          if (line.kind === "card") {
+            return (
+              <div key={i} className="ciq-rcs-in overflow-hidden rounded-2xl rounded-tl-md bg-[#202124]">
+                <div className="h-[72px] bg-[linear-gradient(120deg,#1a73e8,#174ea6)]" />
+                <div className="px-3 py-2.5">
+                  <p className="text-[13px] font-semibold text-white">{line.title}</p>
+                  <p className="mt-0.5 text-[12px] text-[#9aa0a6]">{line.body}</p>
+                  <div className="mt-2 grid grid-cols-2 gap-1.5">
+                    {line.actions.map((a) => (
+                      <span key={a} className="rounded-lg border border-[#8ab4f8]/40 py-1.5 text-center text-[11px] font-semibold text-[#8ab4f8]">
+                        {a}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
+            );
+          }
+          if (line.kind === "chips") {
+            return (
+              <div key={i} className="ciq-rcs-in flex flex-wrap gap-1.5">
+                {line.items.map((c) => (
+                  <span key={c} className="rounded-full border border-[#8ab4f8]/50 px-3 py-1 text-[11px] font-semibold text-[#8ab4f8]">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            );
+          }
+          if (line.kind === "out") {
+            return (
+              <div key={i} className="ciq-rcs-in ml-auto max-w-[78%] rounded-2xl rounded-tr-md bg-[#1a73e8] px-3 py-2 text-[12px] text-white">
+                {line.text}
+              </div>
+            );
+          }
+          return (
+            <div key={i} className="ciq-rcs-in max-w-[88%] rounded-2xl rounded-tl-md bg-[#3c4043] px-3 py-2 text-[12px] text-[#e8eaed]">
+              {line.text}
             </div>
+          );
+        })}
+        {typing ? (
+          <div className="ciq-rcs-in flex w-fit items-center gap-1 rounded-2xl rounded-tl-md bg-[#3c4043] px-3 py-2.5" aria-label="IndiGo is typing">
+            {[0, 1, 2].map((d) => (
+              <i key={d} className="ciq-typing-dot h-1.5 w-1.5 rounded-full bg-[#e8eaed]/80" style={{ animationDelay: `${d * 0.16}s` }} />
+            ))}
           </div>
-        ))}
-      </div>
-      <div className="mt-3 flex gap-1.5">
-        {["Change dates", "Talk to an expert", "Share"].map((s) => (
-          <span key={s} className="rounded-full bg-white/[0.06] px-3 py-1.5 text-[11px] font-semibold text-white/85">
-            {s}
-          </span>
-        ))}
+        ) : null}
       </div>
     </Window>
   );
@@ -155,41 +267,48 @@ export function VisualRcs() {
 
 /* ---------------------------------------------------------------- Voice */
 export function VisualVoice() {
-  const flow = [
-    { Icon: IconPhoneIncoming, l: "Incoming", s: "+91 98•• ••312" },
-    { Icon: IconUsers, l: "IVR", s: "Press 2 · Orders" },
-    { Icon: IconHeadset, l: "Agent", s: "Priya · 00:42" },
-  ];
+  const [sec, setSec] = useState(42);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setSec((s) => s + 1), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const clock = `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
+
   return (
     <Window title="Cloud contact centre · Queue: Orders" channel="voice">
-      <div className="relative flex items-center justify-between">
-        <span className="absolute left-8 right-8 top-[24px] h-px bg-white/12" aria-hidden />
-        <span className="ciq-auto-pulse absolute top-[20px] h-2.5 w-2.5 rounded-full bg-[#ff2d8b] shadow-[0_0_16px_#ff2d8b]" aria-hidden />
-        {flow.map((f, i) => (
-          <div key={f.l} className="ciq-voice-node relative flex w-[30%] flex-col items-center text-center" style={{ animationDelay: `${i * 0.85}s` }}>
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-[#0f0f1a] text-white">
-              <f.Icon size={20} />
-            </span>
-            <p className="mt-2 text-[11px] font-semibold text-white">{f.l}</p>
-            <p className="font-mono text-[10px] text-white/50">{f.s}</p>
-          </div>
-        ))}
+      <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">Live call</p>
+          <p className="mt-1 text-[15px] font-semibold text-white">+91 98•• ••312 → Agent Priya</p>
+        </div>
+        <p className="font-mono text-[18px] font-semibold tabular-nums text-[#2da8ff]">{clock}</p>
       </div>
-      <div className="mt-4 flex items-end gap-[3px] rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3" aria-hidden>
-        {Array.from({ length: 42 }).map((_, i) => (
-          <span key={i} className="ciq-wave-bar w-full rounded-sm bg-gradient-to-t from-[#ff2d8b] to-[#9b4dff]" style={{ height: `${10 + ((i * 37) % 26)}px`, animationDelay: `${(i % 7) * 0.09}s` }} />
-        ))}
-      </div>
-      <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+
+      <ol className="mt-4 space-y-2">
         {[
-          ["Answer rate", "94%"],
-          ["Avg wait", "18s"],
-          ["Recording", "On"],
-        ].map(([k, v]) => (
-          <div key={k}>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">{k}</p>
-            <p className="font-mono text-[15px] font-semibold text-white">{v}</p>
-          </div>
+          { Icon: IconPhoneIncoming, l: "Incoming answered", s: "00:00" },
+          { Icon: IconUsers, l: "IVR · Press 2 Orders", s: "00:08" },
+          { Icon: IconHeadset, l: "Routed to Priya · Bengaluru", s: "00:18" },
+        ].map((row) => (
+          <li key={row.l} className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.06] text-white">
+              <row.Icon size={18} />
+            </span>
+            <span className="flex-1 text-[13px] text-white/85">{row.l}</span>
+            <span className="font-mono text-[11px] text-white/40">{row.s}</span>
+          </li>
+        ))}
+      </ol>
+
+      <div className="mt-4 flex items-end gap-[3px] rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3" aria-hidden>
+        {Array.from({ length: 36 }).map((_, i) => (
+          <span
+            key={i}
+            className="ciq-call-bar w-full rounded-sm bg-[#2da8ff]"
+            style={{ height: `${8 + ((i * 17) % 22)}px`, animationDelay: `${(i % 8) * 0.08}s` }}
+          />
         ))}
       </div>
     </Window>

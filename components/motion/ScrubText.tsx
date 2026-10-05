@@ -18,10 +18,11 @@ type Props = {
 };
 
 /**
- * Paragraph-scale scrub reveal: words sit dimmed and light up one after another
- * as the block travels through the viewport (mediakart "reveal-type").
+ * Paragraph-scale scrub reveal: words start legible and brighten to full as
+ * the block travels up the viewport. Fully lit well before the reader reaches
+ * the end of the paragraph so nothing is left dim.
  */
-export function ScrubText({ text, as = "p", className, accent = [], range = ["top 88%", "top 40%"] }: Props) {
+export function ScrubText({ text, as = "p", className, accent = [], range = ["top 92%", "top 50%"] }: Props) {
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -31,8 +32,13 @@ export function ScrubText({ text, as = "p", className, accent = [], range = ["to
     const ctx = gsap.context(() => {
       gsap.fromTo(
         words,
-        { opacity: 0.16 },
-        { opacity: 1, stagger: 0.6 / words.length, ease: "none", scrollTrigger: { trigger: el, start: range[0], end: range[1], scrub: 0.4 } },
+        { opacity: 0.45 },
+        {
+          opacity: 1,
+          stagger: 0.55 / Math.max(words.length, 1),
+          ease: "none",
+          scrollTrigger: { trigger: el, start: range[0], end: range[1], scrub: 0.6 },
+        },
       );
     }, el);
     return () => ctx.revert();

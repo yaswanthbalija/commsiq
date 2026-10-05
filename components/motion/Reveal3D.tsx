@@ -34,19 +34,14 @@ export function Reveal3D({ children, className, selector, stagger = 0.08, tilt =
 
     const ctx = gsap.context(() => {
       gsap.set(items, { opacity: 0, y: 56, rotateX: tilt, transformOrigin: "50% 0%", transformPerspective: 900 });
-      ScrollTrigger.batch(items, {
-        start: "top 90%",
-        once: true,
-        onEnter: (batch) =>
-          gsap.to(batch, {
-            opacity: 1,
-            y: 0,
-            rotateX: 0,
-            duration: 0.9,
-            stagger,
-            ease: "power3.out",
-            overwrite: true,
-          }),
+      const hidden = { opacity: 0, y: 56, rotateX: tilt };
+      const show = (batch: Element[]) =>
+        gsap.to(batch, { opacity: 1, y: 0, rotateX: 0, duration: 0.75, stagger, ease: "power3.out", overwrite: true });
+      ScrollTrigger.batch(items, { start: "top 90%", onEnter: show, onEnterBack: show });
+      // Reset only once an item is fully off-screen so it replays without visible flicker.
+      items.forEach((item) => {
+        ScrollTrigger.create({ trigger: item, start: "top bottom", onLeaveBack: () => gsap.set(item, hidden) });
+        ScrollTrigger.create({ trigger: item, start: "bottom top", onLeave: () => gsap.set(item, hidden) });
       });
     }, root);
     return () => ctx.revert();

@@ -18,7 +18,7 @@ export type PosterChannel = "sms" | "whatsapp" | "rcs" | "voice" | "omnichannel"
 const THEME: Record<PosterChannel, { bg: string; Icon: typeof IconMessage; label: string; stat: string; statLabel: string }> = {
   sms: { bg: "from-[#0a2a6e] via-[#0b1f55] to-[#050508]", Icon: IconMessage, label: "SMS", stat: "99.2%", statLabel: "delivered in 1.4 s" },
   whatsapp: { bg: "from-[#0b3d2e] via-[#07271f] to-[#050508]", Icon: IconBrandWhatsapp, label: "WhatsApp Business", stat: "71%", statLabel: "resolved by automation" },
-  rcs: { bg: "from-[#1a2a6e] via-[#2a1560] to-[#050508]", Icon: IconBrandGoogle, label: "RCS Business Messaging", stat: "82%", statLabel: "rich cards read" },
+  rcs: { bg: "from-[#0d2147] via-[#0a1628] to-[#050508]", Icon: IconBrandGoogle, label: "RCS Business Messaging", stat: "82%", statLabel: "rich cards read" },
   voice: { bg: "from-[#5a0f3a] via-[#2a0b2e] to-[#050508]", Icon: IconPhoneCall, label: "Voice", stat: "18 s", statLabel: "average speed of answer" },
   omnichannel: { bg: "from-[#07112b] via-[#0b0b12] to-[#050508]", Icon: IconRoute, label: "Omnichannel", stat: "1", statLabel: "timeline per customer" },
   growth: { bg: "from-[#3a0f5a] via-[#1a0b2e] to-[#050508]", Icon: IconTrendingUp, label: "Growth Stack", stat: "5", statLabel: "lifecycle stages connected" },

@@ -28,15 +28,15 @@ export function LifecycleStack() {
     if (!section) return;
     const cards = section.querySelectorAll<HTMLElement>("[data-card]");
     const ctx = gsap.context(() => {
+      // Settle a card back only once the next one is well on its way in, so
+      // its capability list stays readable; dim via an overlay (no filter repaints).
       cards.forEach((card, i) => {
         const next = cards[i + 1];
-        if (!next) return;
-        gsap.to(card, {
-          scale: 0.94,
-          filter: "brightness(0.55)",
-          ease: "none",
-          scrollTrigger: { trigger: next, start: "top 85%", end: "top 20%", scrub: true },
-        });
+        const shade = card.querySelector<HTMLElement>("[data-shade]");
+        if (!next || !shade) return;
+        const st = { trigger: next, start: "top 70%", end: "top 15%", scrub: 0.4 };
+        gsap.to(card, { scale: 0.95, ease: "none", scrollTrigger: st });
+        gsap.to(shade, { opacity: 0.55, ease: "none", scrollTrigger: st });
       });
     }, section);
     return () => ctx.revert();
@@ -47,7 +47,10 @@ export function LifecycleStack() {
       <div className="kx-container">
         <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
           <div className="lg:sticky lg:top-28 lg:self-start">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.24em] text-[var(--ciq-pink)]">Lifecycle</p>
+            <div className="flex items-center gap-3">
+              <span className="ciq-logo-bar w-12" aria-hidden />
+              <p className="text-[12px] font-semibold uppercase tracking-[0.24em] text-white/70">Lifecycle</p>
+            </div>
             <TextReveal
               text={lifecycle.headline}
               accent={["Complete"]}
@@ -71,6 +74,7 @@ export function LifecycleStack() {
                 className={`sticky overflow-hidden rounded-[28px] border border-white/10 bg-[#0b0b14] bg-gradient-to-br p-8 shadow-[0_40px_80px_-30px_rgba(5,5,8,0.9)] will-change-transform md:p-10 ${TONES[i % TONES.length]}`}
                 style={{ top: `${112 + i * 18}px` }}
               >
+                <span data-shade className="pointer-events-none absolute inset-0 z-10 rounded-[28px] bg-[#050508] opacity-0" aria-hidden />
                 <div className="flex items-baseline justify-between">
                   <span className="text-[12px] font-semibold tabular-nums tracking-[0.2em] text-white/45">
                     Stage 0{i + 1}

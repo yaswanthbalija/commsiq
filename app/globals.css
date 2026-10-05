@@ -406,14 +406,44 @@ button:hover .btn-roll::after {
   animation-delay: -12s;
 }
 
-/* The section after the hero slides over it (hero itself is parallaxed by GSAP) */
+/* Landing body sits above the hero. Do not clip — pin/sticky/scroll triggers break. */
 .ciq-over-hero {
   position: relative;
   z-index: 10;
   border-top-left-radius: 32px;
   border-top-right-radius: 32px;
   box-shadow: 0 -30px 80px rgba(5, 5, 8, 0.45);
-  overflow: clip;
+}
+
+.ciq-logo-bar {
+  display: block;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--ciq-gradient);
+}
+
+.ciq-logo-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ciq-logo-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.ciq-logo-dots i:nth-child(1) {
+  background: var(--ciq-pink);
+}
+
+.ciq-logo-dots i:nth-child(2) {
+  background: var(--ciq-purple);
+}
+
+.ciq-logo-dots i:nth-child(3) {
+  background: var(--ciq-blue);
 }
 
 /* Split text: keep lines from clipping descenders */
@@ -1083,7 +1113,44 @@ html.ciq-splash-active body::-webkit-scrollbar {
     box-shadow: 0 0 22px rgba(255, 45, 139, 0.45);
   }
 }
-.ciq-wave-bar {
+.ciq-wave-bar,
+.ciq-call-bar {
   transform-origin: 50% 100%;
   animation: ciq-wave 0.9s ease-in-out infinite alternate;
+}
+.ciq-rcs-in {
+  animation: ciq-fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ciq-typing-dot {
+  animation: ciq-typing 1s ease-in-out infinite;
+}
+@keyframes ciq-typing {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+/* Platform pipeline rail: a pulse travels Reach → Convert */
+.ciq-rail-pulse {
+  animation: ciq-rail-pulse 4.5s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+@keyframes ciq-rail-pulse {
+  0% {
+    left: -12%;
+    opacity: 0;
+  }
+  8%,
+  88% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
 }

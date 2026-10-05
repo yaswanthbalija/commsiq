@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { bindReveal } from "@/components/motion/bindReveal";
 import { ScrubText } from "@/components/motion/ScrubText";
 import { TextReveal } from "@/components/motion/TextReveal";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
@@ -22,18 +23,12 @@ export function AboutStats() {
     const el = stats.current;
     if (!el) return;
     const ctx = gsap.context(() => {
-      gsap.fromTo(
+      const tween = gsap.fromTo(
         el.children,
-        { rotateX: 90, opacity: 0, transformOrigin: "50% 0%" },
-        {
-          rotateX: 0,
-          opacity: 1,
-          duration: 0.9,
-          stagger: 0.12,
-          ease: "power3.out",
-          scrollTrigger: { trigger: el, start: "top 80%", onEnter: () => setCount(true) },
-        },
+        { y: 24, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.7, stagger: 0.1, ease: "power3.out", paused: true, onStart: () => setCount(true) },
       );
+      bindReveal(tween, el);
     }, el);
     return () => ctx.revert();
   }, []);
@@ -41,7 +36,10 @@ export function AboutStats() {
   return (
     <section id="about" className="relative bg-[#08080f] py-24 text-white md:py-32">
       <div className="kx-container">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.24em] text-[var(--ciq-pink)]">About commsIQ</p>
+        <div className="flex items-center gap-3">
+          <span className="ciq-logo-bar w-12" aria-hidden />
+          <p className="text-[12px] font-semibold uppercase tracking-[0.24em] text-white/70">About commsIQ</p>
+        </div>
         <TextReveal
           text={about.headline}
           accent={["Connect,", "Engage,", "Converse,", "Convert."]}
@@ -56,9 +54,14 @@ export function AboutStats() {
           </div>
 
           <div>
-            <dl ref={stats} className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-white/10 ring-1 ring-white/10 [perspective:1200px]">
-              {trustStats.map((s) => (
+            <dl ref={stats} className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-white/10 ring-1 ring-white/10">
+              {trustStats.map((s, i) => (
                 <div key={s.label} className="bg-[#0b0b14] p-6">
+                  <span
+                    className="mb-4 block h-[3px] w-8 rounded-full"
+                    style={{ background: ["#ff2d8b", "#9b4dff", "#2da8ff", "#ff2d8b"][i % 4] }}
+                    aria-hidden
+                  />
                   <dd className="text-[clamp(2.4rem,4vw,3.6rem)] font-extrabold leading-none tracking-tight">
                     <AnimatedNumber value={s.value} decimals={s.decimals} prefix={s.prefix} suffix={s.suffix} start={count} />
                   </dd>

@@ -60,6 +60,7 @@ export function SmoothScroll({ enabled }: { enabled: boolean }) {
     }
 
     ScrollTrigger.refresh();
+    window.setTimeout(() => ScrollTrigger.refresh(), 180);
 
     return () => {
       document.removeEventListener("click", onClick);

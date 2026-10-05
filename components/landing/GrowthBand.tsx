@@ -28,6 +28,7 @@ export function GrowthBand() {
       <div className="kx-container relative">
         <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-16">
           <div>
+            <span className="ciq-logo-bar mb-4 w-12" aria-hidden />
             <p className="text-[12px] font-semibold uppercase tracking-[0.24em] text-[var(--ciq-purple)]">{growthTeaser.eyebrow}</p>
             <TextReveal
               text={growthTeaser.headline}

@@ -11,6 +11,7 @@ const SECTIONS = [
   { id: "why", label: "Why commsIQ" },
   { id: "industries", label: "Industries" },
   { id: "about", label: "About" },
+  { id: "brands", label: "Brands" },
   { id: "growth", label: "Growth Stack" },
   { id: "contact", label: "Contact" },
 ] as const;
@@ -51,7 +52,10 @@ export function SectionIndex() {
             <span className={cn("text-[10px] font-semibold uppercase tracking-[0.2em] transition-all duration-300", on ? "translate-x-0 text-white opacity-100" : "translate-x-2 text-white/40 opacity-0 group-hover:translate-x-0 group-hover:opacity-100")}>
               {String(i + 1).padStart(2, "0")} {s.label}
             </span>
-            <span className={cn("h-px transition-all duration-500", on ? "w-8 bg-[var(--ciq-pink)]" : "w-4 bg-white/25 group-hover:bg-white/60")} />
+            <span
+              className={cn("h-px transition-all duration-500", on ? "w-8" : "w-4 bg-white/25 group-hover:bg-white/60")}
+              style={on ? { background: ["#ff2d8b", "#9b4dff", "#2da8ff"][i % 3] } : undefined}
+            />
           </a>
         );
       })}

@@ -45,21 +45,31 @@ export function JourneyPath() {
   useEffect(() => {
     const section = root.current;
     if (!section) return;
+    const diagram = section.querySelector<HTMLElement>("[data-diagram]");
     const path = section.querySelector<SVGPathElement>("[data-path]");
     const glow = section.querySelector<SVGPathElement>("[data-glow]");
     const nodes = section.querySelectorAll<HTMLElement>("[data-node]");
-    if (!path || !glow) return;
+    if (!diagram || !path || !glow) return;
     const len = path.getTotalLength();
     [path, glow].forEach((p) => {
       p.style.strokeDasharray = `${len}`;
       p.style.strokeDashoffset = `${len}`;
     });
     const ctx = gsap.context(() => {
-      const tl = gsap.timeline({ scrollTrigger: { trigger: section, start: "top 60%", end: "bottom 70%", scrub: 0.6 } });
+      // The route finishes drawing while the whole diagram is still on screen,
+      // so every moment is lit and readable before the section scrolls away.
+      const tl = gsap.timeline({
+        scrollTrigger: { trigger: diagram, start: "top 88%", end: "bottom 78%", scrub: 0.8 },
+      });
       tl.to([path, glow], { strokeDashoffset: 0, ease: "none", duration: 1 }, 0);
       nodes.forEach((n, i) => {
-        const at = i / (nodes.length - 1);
-        tl.fromTo(n, { opacity: 0, scale: 0.6, y: 16 }, { opacity: 1, scale: 1, y: 0, duration: 0.08, ease: "back.out(2)" }, Math.max(0, at - 0.03));
+        const at = i / Math.max(nodes.length - 1, 1);
+        tl.fromTo(
+          n,
+          { opacity: 0, scale: 0.88, y: 12 },
+          { opacity: 1, scale: 1, y: 0, duration: 0.12, ease: "power2.out" },
+          Math.max(0, at - 0.04),
+        );
       });
     }, section);
     return () => ctx.revert();
@@ -75,7 +85,10 @@ export function JourneyPath() {
       <div className="kx-container relative">
         <div className="grid gap-8 md:grid-cols-[1fr_1fr] md:items-end">
           <div>
-            <p className="text-[12px] font-semibold uppercase tracking-[0.24em] text-[var(--ciq-blue)]">Journey</p>
+            <div className="flex items-center gap-3">
+              <span className="ciq-logo-bar w-12" aria-hidden />
+              <p className="text-[12px] font-semibold uppercase tracking-[0.24em] text-white/70">Journey</p>
+            </div>
             <TextReveal
               text={journeyStory.headline}
               accent={["Conversation"]}
@@ -89,7 +102,7 @@ export function JourneyPath() {
         </div>
 
         {/* diagram */}
-        <div className="relative mt-16 hidden aspect-[1200/620] w-full md:block">
+        <div data-diagram className="relative mt-16 hidden aspect-[1200/620] w-full md:block">
           <svg viewBox="0 0 1200 620" className="absolute inset-0 h-full w-full overflow-visible" aria-hidden>
             <defs>
               <linearGradient id="journey-grad" x1="0" x2="1">
@@ -108,14 +121,16 @@ export function JourneyPath() {
             return (
               <div
                 key={step.label}
-                data-node
                 className="absolute w-[240px]"
                 style={{ left: `${(n.x / 1200) * 100}%`, top: `${(n.y / 620) * 100}%`, transform: `translate(-50%, ${above ? "-100%" : "0"})` }}
               >
-                <div className={above ? "flex flex-col-reverse items-center" : "flex flex-col items-center"}>
+                <div data-node className={above ? "flex flex-col-reverse items-center" : "flex flex-col items-center"}>
                   <span className="relative my-3 flex h-4 w-4 items-center justify-center">
                     <span className="absolute inset-0 rounded-full bg-white/30 blur-[3px]" />
-                    <span className="relative h-2.5 w-2.5 rounded-full bg-white shadow-[0_0_18px_rgba(255,255,255,0.9)]" />
+                    <span
+                      className="relative h-2.5 w-2.5 rounded-full shadow-[0_0_18px_rgba(155,77,255,0.8)]"
+                      style={{ background: ["#ff2d8b", "#9b4dff", "#2da8ff", "#ff2d8b", "#2da8ff"][i] }}
+                    />
                   </span>
                   <div className="w-full rounded-2xl border border-white/10 bg-[#0b0b14]/90 p-4 text-center shadow-[0_24px_60px_-20px_rgba(5,5,8,0.9)] backdrop-blur">
                     <div className="flex items-center justify-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/55">

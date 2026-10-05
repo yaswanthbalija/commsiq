@@ -6,6 +6,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { IconArrowUpRight } from "@tabler/icons-react";
 import { ChannelLogo, channelKeyFor } from "@/components/ui/ChannelLogo";
+import { bindReveal } from "@/components/motion/bindReveal";
 import { TextReveal } from "@/components/motion/TextReveal";
 import { industries } from "@/lib/content/home";
 
@@ -22,11 +23,12 @@ export function IndustryList() {
     const el = list.current;
     if (!el) return;
     const ctx = gsap.context(() => {
-      gsap.fromTo(
+      const tween = gsap.fromTo(
         el.children,
         { opacity: 0, x: -40 },
-        { opacity: 1, x: 0, duration: 0.8, stagger: 0.07, ease: "power3.out", scrollTrigger: { trigger: el, start: "top 80%" } },
+        { opacity: 1, x: 0, duration: 0.6, stagger: 0.06, ease: "power3.out", paused: true },
       );
+      bindReveal(tween, el);
     }, el);
     return () => ctx.revert();
   }, []);
@@ -34,7 +36,10 @@ export function IndustryList() {
   return (
     <section id="industries" className="relative bg-[#050508] py-24 text-white md:py-32">
       <div className="kx-container">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.24em] text-[var(--ciq-blue)]">Industry solutions</p>
+        <div className="flex items-center gap-3">
+          <span className="ciq-logo-bar w-12" aria-hidden />
+          <p className="text-[12px] font-semibold uppercase tracking-[0.24em] text-white/70">Industry solutions</p>
+        </div>
         <TextReveal
           text="Built for every customer conversation."
           accent={["every"]}

@@ -6,6 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { AnimatePresence, motion } from "framer-motion";
 import { brand } from "@/lib/brand";
 import { contactCopy } from "@/lib/content/home";
+import { bindReveal } from "@/components/motion/bindReveal";
 import { TextReveal } from "@/components/motion/TextReveal";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -18,14 +19,12 @@ export function ContactBlock() {
     const el = ref.current;
     if (!el) return;
     const ctx = gsap.context(() => {
-      gsap.from(el.querySelectorAll("[data-form]"), {
-        opacity: 0,
-        y: 28,
-        duration: 0.6,
-        stagger: 0.1,
-        ease: "power3.out",
-        scrollTrigger: { trigger: el, start: "top 78%" },
-      });
+      const tween = gsap.fromTo(
+        el.querySelectorAll("[data-form]"),
+        { opacity: 0, y: 28 },
+        { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power3.out", paused: true },
+      );
+      bindReveal(tween, el);
     }, el);
     return () => ctx.revert();
   }, []);
